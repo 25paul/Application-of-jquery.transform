@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        body,div,h2,ul,li,a{
+            margin: 0;
+            padding: 0;
+            font-family: "微软雅黑";
+        }
+        .mainBox{
+            width: 1000px;
+            height: 450px;
+            overflow: hidden;
+            margin: 0 auto;
+            position: relative;
+        }
+        .mainBox ul li{
+            float: left;
+            list-style: none;
+            width: 250px;
+            height: 400px;
+            overflow: hidden;
+            border: 30px solid #ffffff;
+            margin-left: -60px;
+            position: relative;
+        }
+        /*让图片浮起来*/
+        .mainBox ul li img{
+            position: absolute;
+        }
+        .mainBox ul li img{
+            width: 250px;
+            height: 500px;
+        }
+        .mainBox h2{
+            position: absolute;
+            top: 320px;
+            left: 650px;
+            /*width: 280px;*/
+            /*height: 40px;*/
+            background-color: rgba(255,255,255,0.6);
+            padding: 5px;
+            letter-spacing: 0.6em;
+        }
+        .mainBox .buttonBox a{
+            position: absolute;
+            opacity: 0.6;
+        }
+        .mainBox .buttonBox a:hover{
+            position: absolute;
+            opacity: 1;
+        }
+        .mainBox .buttonBox .buttonLeft{
+            top: 200px;
+            left: 10px;
+            font-size: 60px;
+            color: #ffffff;
+        }
+        .mainBox .buttonBox .buttonRight{
+            top: 200px;
+            right: 40px;
+            font-size: 60px;
+            color: #ffffff;
+        }
+        .mainBox .buttonBox .play{
+            top: 0;
+            left: 0;
+            border: 1px solid #000000;
+            padding: 3px;
+            background-color: #868995;
+            color: #ffffff;
+        }
+        .mainBox .buttonBox .buttonLeft,
+        .mainBox .buttonBox .buttonRight,
+        .mainBox .buttonBox .play{
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<div class="mainBox">
+    <ul>
+        <li><img src="images/1.jpg"></li>
+        <li><img src="images/2.jpg"></li>
+        <li><img src="images/3.jpg"></li>
+        <li><img src="images/4.jpg"></li>
+    </ul>
+    <div class="buttonBox">
+        <a href="#" class="buttonLeft">&lt;</a>
+        <a href="#" class="buttonRight">&gt;</a>
+        <a href="#" class="play">play</a>
+    </div>
+    <h2>多图旋转轮播效果</h2>
+</div>
+<script src="js/jquery-1.7.1.min.js"></script>
+<script src="js/jquery.transform-0.9.3.min_.js"></script>
+<script>
+//    var loopPlayerInit = (function(){
+//        var a = 0;
+//        function init(){
+//            alert(a);
+//        }
+//        return init;
+//    })()
+////    因为立即执行了，所以不用在调用了
+//    loopPlayerInit()
+    var loopPlayerInit = (function(){
+        var $buttonLeft = null,
+            $buttonRight = null,
+            $play = null,
+            $imgList = null,    //命名为空变量，用到时才加载
+            origin = ['125px','600px'],//给图片设置中心点
+            imgOrigin = ['125px','800px'],
+            imgAll = createImg([['images/1.jpg','images/2.jpg','images/3.jpg','images/4.jpg'],['images/5.jpg','images/6.jpg','images/7.jpg','images/8.jpg'],['images/9.jpg','images/010.jpg','images/011.jpg','images/012.jpg'],['images/013.jpg','images/014.jpg','images/015.jpg','images/016.jpg']]),  //用一个二维数组存放图片
+            imgArrIndex = 0, //当前图片所显示的是哪一组
+            imgAng = 45,
+            imgTime = 300,
+            rotating = false,  //控制当前的动画状态
+            autoTimer = null,     //存定时器
+            autoInterval = 1000;   //定时器间隔时间
+
+        function init(){
+             $buttonLeft = $(".buttonLeft"),
+             $buttonRight = $(".buttonRight"),
+             $play = $(".play"),
+             $imgList = $(".mainBox ul li");  //这些变量不能加var，加了就变成局部变量了
+
+            configer();
+            setEvent();//事件添加函数
+        }
+
+        function configer(){
+//            i就是每一个循环的索引
+            var ang = 5,
+                aint = -5;
+            $imgList.transform({origin:origin});  //设置旋转的中心点
+            $imgList.each(function(i){
+                var $this = $(this);
+                $this.transform({rotate:aint+i*ang+"deg"});
+            })
+        }
+
+        function setEvent(){
+//            为什么用bind，因为bind才有的return false，on不会；两个的绑定机制不一样
+            $buttonLeft.bind("click",function(){
+                anigo(-1);
+//                alert(imgAll[0][0]);
+                return false;   //返回空，不跳转
+            });
+            $buttonRight.bind("click",function(){
+                anigo(1);
+                return false;
+            });
+            $play.bind("click",function(){
+                var play = "play",
+                        pause = "pause",
+                        $but = $(this);
+                if($but.text() == "play"){
+                    $but.text(pause);
+                    autoGo();
+                }else{
+                    $but.text(play);
+                    autoStop();
+                }
+                return false;
+            });
+        }
+
+        function createImg(arr){
+            var imgArr = [];
+            for(var i in arr){
+                imgArr[i] = [];//这样就成了二维数组
+                for(var x in arr[i]){
+                    imgArr[i][x] = new Image();   //这样imgArr下的索引都是图片对象了
+                    imgArr[i][x].src = arr[i][x];  //生成图片了，存在浏览器的缓存中
+                }
+            }
+            return imgArr;
+        }
+
+        function anigo(d){
+            if(rotating) return false;
+            rotating = true;
+
+            imgArrIndex += d; //+1或-1
+
+            if(imgArrIndex>imgAll.length-1){
+                imgArrIndex=0;
+            }
+            else if(imgArrIndex<0){
+                imgArrIndex=imgAll.length-1;
+            }
+            $imgList.each(function (i) {
+                var $thisItem = $(this);  //把图片拿出来
+                var $thisImg = $thisItem.children("img");
+//                console.log(imgArrIndex);
+//                console.log(i);
+//              i+=1;
+                var $targetImg = $(imgAll[imgArrIndex][i++]);  //封装成jquery对象 记录要插入的新图片
+                var thisTime = (d === 1)?imgTime*i:imgTime*($imgList.length-1-i);
+
+                $thisItem.append($targetImg);
+                $thisImg.transform({origin: imgOrigin});    //改进：设置旋转圆心点
+                $targetImg.transform({origin: imgOrigin, rotate: (0 - d) * imgAng + "deg"});  //定义初始角度
+
+                setTimeout(function(){
+                    //加动画
+                    $thisImg.animate({rotate: imgAng * d + "deg"});
+                    $targetImg.animate({rotate: "0deg"}, 500, function () {
+                        $thisImg.remove();     //动画加载后把之前的的图片删掉
+
+                        if(thisTime == (($imgList.length-1)*imgTime)){
+                            rotating = false;
+                        }
+                    });
+                },thisTime)
+
+            })
+        }
+
+        function autoGo(){
+            clearInterval(autoTimer);  //先清除，不然内容会叠加
+            anigo(1);
+            autoTimer = setInterval(function(){
+                anigo(1);
+            },autoInterval);
+        }
+        function autoStop(){
+            clearInterval(autoTimer);
+        }
+
+        return init;
+    })();
+    loopPlayerInit()
+</script>
+</body>
+</html>
